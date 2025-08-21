@@ -1,5 +1,6 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
 import AuthService from '../services/AuthService.js';
+import tokenBlacklistService from '../services/TokenBlackListService.js'
 
 // Estender a interface do FastifyRequest para incluir dados do usuário
 declare module 'fastify' {
@@ -48,6 +49,16 @@ class AuthMiddleware {
         return reply.status(401).send({
           error: 'Token inválido ou expirado',
           code: 'INVALID_TOKEN'
+        });
+      }
+
+      // Verificar se token está na blacklist
+      const isBlacklisted = await tokenBlacklistService.isTokenBlacklisted(token);
+      
+      if (isBlacklisted) {
+        return reply.status(401).send({
+          error: 'Token foi invalidado. Faça login novamente.',
+          code: 'TOKEN_BLACKLISTED'
         });
       }
 

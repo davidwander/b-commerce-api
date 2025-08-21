@@ -1,5 +1,7 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
 import AuthService, { AuthError } from '../services/AuthService.js';
+import tokenBlacklistService from '../services/TokenBlackListService.js';
+import PasswordRecoveryService, { RecoveryError } from '../services/PasswordRecoveryService.js';
 
 // Interfaces para tipagem das requisições
 interface LoginBody {
@@ -13,9 +15,11 @@ interface RefreshTokenBody {
 
 class AuthController {
   private authService: AuthService;
+  private passwordRecoveryService: PasswordRecoveryService;
 
   constructor() {
     this.authService = new AuthService();
+    this.passwordRecoveryService = new PasswordRecoveryService();
   }
 
   async login(request: FastifyRequest, reply: FastifyReply) {
@@ -55,6 +59,132 @@ class AuthController {
       reply.status(500).send({
         error: 'Erro interno do servidor',
         code: 'INTERNAL_SERVER_ERROR'
+      });
+    }
+  }
+
+  async forgotPassword(request: FastifyRequest, reply: FastifyReply) {
+    try {
+      console.log('=== AUTH CONTROLLER: Forgot Password ===');
+      
+      const { email } = request.body as { email: string };
+
+      if (!email) {
+        return reply.status(400).send({
+          error: 'Email é obrigatório',
+          code: 'MISSING_EMAIL'
+        });
+      }
+
+      const result = await this.passwordRecoveryService.requestPasswordReset(email);
+
+      // Por segurança, sempre retornar sucesso
+      reply.status(200).send({
+        message: 'Se o email existir em nossa base, você receberá instruções para redefinir sua senha',
+        data: {
+          // Em produção, NÃO retornar o token
+          ...(process.env.NODE_ENV === 'development' ? { token: result.token } : {}),
+          expiresIn: '15 minutos'
+        }
+      });
+
+    } catch (error: unknown) {
+      console.error('Erro no forgot password:', error);
+
+      if (error instanceof RecoveryError) {
+        return reply.status(error.statusCode).send({
+          error: error.message,
+          code: 'RECOVERY_ERROR'
+        });
+      }
+
+      reply.status(500).send({
+        error: 'Erro interno do servidor',
+        code: 'INTERNAL_SERVER_ERROR'
+      });
+    }
+  }
+
+  async resetPassword(request: FastifyRequest, reply: FastifyReply) {
+    try {
+      console.log('=== AUTH CONTROLLER: Reset Password ===');
+      
+      const { token, newPassword } = request.body as { token: string; newPassword: string };
+
+      if (!token || !newPassword) {
+        return reply.status(400).send({
+          error: 'Token e nova senha são obrigatórios',
+          code: 'MISSING_FIELDS'
+        });
+      }
+
+      await this.passwordRecoveryService.resetPassword(token, newPassword);
+
+      reply.status(200).send({
+        message: 'Senha redefinida com sucesso. Você pode fazer login com a nova senha.',
+        data: null
+      });
+
+    } catch (error: unknown) {
+      console.error('Erro no reset password:', error);
+
+      if (error instanceof RecoveryError) {
+        return reply.status(error.statusCode).send({
+          error: error.message,
+          code: 'RECOVERY_ERROR'
+        });
+      }
+
+      reply.status(500).send({
+        error: 'Erro interno do servidor',
+        code: 'INTERNAL_SERVER_ERROR'
+      });
+    }
+  }
+
+  async verifyResetToken(request: FastifyRequest, reply: FastifyReply) {
+    try {
+      console.log('=== AUTH CONTROLLER: Verify Reset Token ===');
+      
+      const { token } = request.params as { token: string };
+
+      if (!token) {
+        return reply.status(400).send({
+          error: 'Token é obrigatório',
+          code: 'MISSING_TOKEN'
+        });
+      }
+
+      const result = await this.passwordRecoveryService.verifyRecoveryToken(token);
+
+      if (!result.valid) {
+        return reply.status(400).send({
+          error: 'Token inválido ou expirado',
+          code: 'INVALID_TOKEN'
+        });
+      }
+
+      reply.status(200).send({
+        message: 'Token válido',
+        data: {
+          valid: true,
+          expiresIn: Math.ceil((result.expiresIn || 0) / 1000) // em segundos
+        }
+      });
+
+    } catch (error: unknown) {
+      console.error('Erro na verificação do token:', error);
+
+      if (error instanceof RecoveryError) {
+        return reply.status(error.statusCode).send({
+          error: error.message,
+          code: 'RECOVERY_ERROR'
+        });
+      }
+
+      reply.status(400).send({
+        error: 'Token inválido',
+        code: 'INVALID_TOKEN'
       });
     }
   }
@@ -134,12 +264,34 @@ class AuthController {
     }
   }
 
-  async logout(_request: FastifyRequest, reply: FastifyReply) {
+  async logout(request: FastifyRequest, reply: FastifyReply) {
     try {
       console.log('=== AUTH CONTROLLER: Logout ===');
       
-      // Em uma implementação completa, você poderia invalidar o token
-      // adicionando-o a uma blacklist no Redis ou banco de dados
+      // Extrair token do header
+      const authHeader = request.headers.authorization;
+      
+      if (!authHeader) {
+        return reply.status(400).send({
+          error: 'Token de acesso necessário para logout',
+          code: 'MISSING_TOKEN'
+        });
+      }
+
+      const token = authHeader.replace('Bearer ', '');
+      
+      if (!token || token === authHeader) {
+        return reply.status(400).send({
+          error: 'Formato de token inválido',
+          code: 'INVALID_TOKEN_FORMAT'
+        });
+      }
+
+      // Adicionar token à blacklist
+      await tokenBlacklistService.blacklistToken(token, 'logout');
+      
+      const userId = (request as any).userId;
+      console.log(`Logout realizado para usuário: ${userId}`);
       
       reply.status(200).send({
         message: 'Logout realizado com sucesso',
@@ -148,6 +300,13 @@ class AuthController {
 
     } catch (error: unknown) {
       console.error('Erro no logout:', error);
+
+      if (error instanceof AuthError) {
+        return reply.status(error.statusCode).send({
+          error: error.message,
+          code: 'AUTH_ERROR'
+        });
+      }
 
       reply.status(500).send({
         error: 'Erro interno do servidor',

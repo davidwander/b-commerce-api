@@ -1,5 +1,6 @@
 import prismaClient from '../prisma/index.js';
 import bcrypt from 'bcrypt';
+import PasswordValidationService from './PasswordValidationService.js';
 
 // Classe customizada para erros de negócio
 class BusinessError extends Error {
@@ -13,6 +14,11 @@ class BusinessError extends Error {
 }
 
 class CreateUserService {
+  private passwordValidator: PasswordValidationService;
+
+  constructor() {
+    this.passwordValidator = new PasswordValidationService();
+  }
   async execute(userData: { name: string; email: string; password: string }) {
     console.log("=== DEBUG SERVICE: ROTA CHAMADA ===");
     console.log('Dados recebidos no service:', userData);
@@ -100,14 +106,17 @@ class CreateUserService {
       throw new BusinessError('Email deve ter no máximo 255 caracteres', 400);
     }
     
-    // Validação de senha
-    if (!userData.password || userData.password.length < 6) {
-      throw new BusinessError('Senha deve ter pelo menos 6 caracteres', 400);
+    // Validação de senha forte
+    const personalInfo = [userData.name, userData.email.split('@')[0]];
+    const passwordValidation = this.passwordValidator.validatePassword(userData.password, {}, personalInfo);
+    
+    if (!passwordValidation.isValid) {
+      const errorMessage = `Senha não atende aos critérios de segurança:\n${passwordValidation.errors.join('\n')}`;
+      throw new BusinessError(errorMessage, 400);
     }
     
-    if (userData.password.length > 100) {
-      throw new BusinessError('Senha deve ter no máximo 100 caracteres', 400);
-    }
+    // Log da força da senha (sem expor a senha)
+    console.log(`Senha validada - Força: ${passwordValidation.strength}, Score: ${passwordValidation.score}`);
     
     // Verificar se email já existe (opcional - também será capturado pelo erro P2002)
     const existingUser = await prismaClient.user.findUnique({
