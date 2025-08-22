@@ -8,9 +8,54 @@ datasource db {
 }
 
 model User {
-  id        Int      @id @default(autoincrement())
+  id        Int      @id @default(autoincrement()) 
   name      String
   email     String   @unique
   password  String
   createdAt DateTime @default(now())
+  
+  // Relacionamento com peças
+  pieces    Piece[] 
+  
+  @@map("users")
+}
+
+model Category {
+  id        String   @id
+  name      String
+  parentId  String?  @map("parent_id")
+  level     Int
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // Relacionamentos
+  parent     Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children   Category[] @relation("CategoryHierarchy")
+  
+  // Peças relacionadas
+  piecesAsCategory     Piece[] @relation("CategoryPieces")
+  piecesAsSubcategory  Piece[] @relation("SubcategoryPieces")
+  piecesAsGender       Piece[] @relation("GenderPieces")
+
+  @@map("categories")
+}
+
+model Piece {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  description   String
+  categoryId    String   @map("category_id")
+  subcategoryId String?  @map("subcategory_id")
+  genderId      String?  @map("gender_id")
+  categoryPath  String   @map("category_path")
+  quantity      Int      @default(1)
+  userId        Int      @map("user_id") 
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  // Relacionamentos
+  category     Category  @relation("CategoryPieces", fields: [categoryId], references: [id])
+  subcategory  Category? @relation("SubcategoryPieces", fields: [subcategoryId], references: [id])
+  gender       Category? @relation("GenderPieces", fields: [genderId], references: [id])
+  user         User      @relation(fields: [userId], references: [id])  
+
+  @@map("pieces")
 }
