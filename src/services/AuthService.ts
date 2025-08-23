@@ -24,6 +24,8 @@ interface LoginResponse {
 }
 
 interface TokenPayload {
+  iat: any;
+  exp: any;
   userId: string;
   email: string;
 }
