@@ -43,7 +43,8 @@ export default async function inventoryRoutes(fastify: FastifyInstance) {
       // Mapear para o formato esperado pelo frontend
       const mappedPieces = pieces.map(piece => ({
         id: piece.id,
-        name: piece.description, // O frontend espera 'name', mas o DB tem 'description'
+        name: piece.description, 
+        description: piece.description,
         quantity: piece.quantity,
         categoryPath: piece.categoryPath,
         categoryId: piece.categoryId,
