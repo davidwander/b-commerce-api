@@ -24,6 +24,11 @@ interface FilterPiecesQuery {
   search?: string;
 }
 
+// Definindo o tipo para o corpo da requisição de atualização de preço de peça
+interface UpdatePiecePriceBody {
+  price: number;
+}
+
 // ===========================
 // ROTAS DA API
 // ===========================
@@ -213,6 +218,40 @@ export default async function inventoryRoutes(fastify: FastifyInstance) {
         success: false,
         error: 'Erro ao adicionar peça'
       });
+    }
+  });
+
+  // ✅ ROTA PARA ATUALIZAR O PREÇO DE UMA PEÇA EXISTENTE
+  fastify.put<{ Params: { id: string }, Body: UpdatePiecePriceBody }>('/pieces/:id/price', {
+    preHandler: authMiddleware.authenticate.bind(authMiddleware),
+    schema: {
+      body: {
+        type: 'object',
+        required: ['price'],
+        properties: {
+          price: { type: 'number', minimum: 0 }
+        }
+      }
+    }
+  }, async (request: FastifyRequest<{ Params: { id: string }, Body: UpdatePiecePriceBody }>, reply: FastifyReply) => {
+    try {
+      const userId = (request as any).userId;
+      const { id } = request.params;
+      const { price } = request.body;
+
+      console.log(`💲 Atualizando preço da peça ${id} para ${price} para o usuário ${userId}`);
+
+      const updatedPiece = await prisma.piece.update({
+        where: { id, userId }, // Garante que o usuário só pode atualizar suas próprias peças
+        data: { price },
+      });
+
+      console.log('✅ Preço da peça atualizado com sucesso:', updatedPiece.id);
+
+      return reply.send({ success: true, data: { id: updatedPiece.id, price: updatedPiece.price } });
+    } catch (error) {
+      console.error('❌ Erro ao atualizar preço da peça:', error);
+      return reply.status(500).send({ success: false, error: 'Erro ao atualizar preço da peça' });
     }
   });
 }
