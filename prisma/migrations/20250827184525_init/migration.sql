@@ -1,4 +1,15 @@
 -- CreateTable
+CREATE TABLE "public"."users" (
+    "id" SERIAL NOT NULL,
+    "name" TEXT NOT NULL,
+    "email" TEXT NOT NULL,
+    "password" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "users_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "public"."categories" (
     "id" TEXT NOT NULL,
     "name" TEXT NOT NULL,
@@ -18,11 +29,15 @@ CREATE TABLE "public"."pieces" (
     "gender_id" TEXT,
     "category_path" TEXT NOT NULL,
     "quantity" INTEGER NOT NULL DEFAULT 1,
+    "user_id" INTEGER NOT NULL,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "pieces_pkey" PRIMARY KEY ("id")
 );
+
+-- CreateIndex
+CREATE UNIQUE INDEX "users_email_key" ON "public"."users"("email");
 
 -- AddForeignKey
 ALTER TABLE "public"."categories" ADD CONSTRAINT "categories_parent_id_fkey" FOREIGN KEY ("parent_id") REFERENCES "public"."categories"("id") ON DELETE SET NULL ON UPDATE CASCADE;
@@ -35,3 +50,6 @@ ALTER TABLE "public"."pieces" ADD CONSTRAINT "pieces_subcategory_id_fkey" FOREIG
 
 -- AddForeignKey
 ALTER TABLE "public"."pieces" ADD CONSTRAINT "pieces_gender_id_fkey" FOREIGN KEY ("gender_id") REFERENCES "public"."categories"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."pieces" ADD CONSTRAINT "pieces_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
