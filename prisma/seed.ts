@@ -70,7 +70,47 @@ async function main() {
       { id: 'subsubcat-008', name: 'Masculina', parentId: 'subcat-004', level: 3 },
       // Calça social
       { id: 'subsubcat-009', name: 'Feminina', parentId: 'subcat-005', level: 3 },
-      { id: 'subsubcat-010', name: 'Masculina', parentId: 'subcat-005', level: 3 }
+      { id: 'subsubcat-010', name: 'Masculina', parentId: 'subcat-005', level: 3 },
+      // Tennis
+      { id: 'subsubcat-011', name: 'Feminina', parentId: 'subcat-006', level: 3 },
+      { id: 'subsubcat-012', name: 'Masculina', parentId: 'subcat-006', level: 3 },
+      // Botas
+      { id: 'subsubcat-013', name: 'Feminina', parentId: 'subcat-007', level: 3 },
+      { id: 'subsubcat-014', name: 'Masculina', parentId: 'subcat-007', level: 3 },
+      // Salto alto
+      { id: 'subsubcat-015', name: 'Feminina', parentId: 'subcat-008', level: 3 },
+      // Sapatilha
+      { id: 'subsubcat-016', name: 'Feminina', parentId: 'subcat-009', level: 3 },
+      // Óculos
+      { id: 'subsubcat-017', name: 'Feminina', parentId: 'subcat-010', level: 3 },
+      { id: 'subsubcat-018', name: 'Masculina', parentId: 'subcat-010', level: 3 },
+      // Bolsas
+      { id: 'subsubcat-019', name: 'Feminina', parentId: 'subcat-011', level: 3 },
+      { id: 'subsubcat-020', name: 'Masculina', parentId: 'subcat-011', level: 3 },
+      // Bijuteria
+      { id: 'subsubcat-021', name: 'Feminina', parentId: 'subcat-012', level: 3 },
+      { id: 'subsubcat-022', name: 'Masculina', parentId: 'subcat-012', level: 3 },
+      // Chapéus
+      { id: 'subsubcat-023', name: 'Feminina', parentId: 'subcat-013', level: 3 },
+      { id: 'subsubcat-024', name: 'Masculina', parentId: 'subcat-013', level: 3 },
+      // Saia
+      { id: 'subsubcat-025', name: 'Feminina', parentId: 'cat-005', level: 2 }, // Corrigido level para 2, parentId para cat-005
+      // Vestido
+      { id: 'subsubcat-026', name: 'Feminina', parentId: 'cat-006', level: 2 }, // Corrigido level para 2, parentId para cat-006
+      // Shorts Casual
+      { id: 'subsubcat-027', name: 'Feminina', parentId: 'subcat-014', level: 3 },
+      { id: 'subsubcat-028', name: 'Masculina', parentId: 'subcat-014', level: 3 },
+      // Shorts Esportivo
+      { id: 'subsubcat-029', name: 'Feminina', parentId: 'subcat-015', level: 3 },
+      { id: 'subsubcat-030', name: 'Masculina', parentId: 'subcat-015', level: 3 },
+      // Biquíni
+      { id: 'subsubcat-031', name: 'Feminina', parentId: 'cat-008', level: 2 }, // Corrigido level para 2, parentId para cat-008
+      // Casacos Jaqueta
+      { id: 'subsubcat-032', name: 'Feminina', parentId: 'subcat-016', level: 3 },
+      { id: 'subsubcat-033', name: 'Masculina', parentId: 'subcat-016', level: 3 },
+      // Casacos Blazer
+      { id: 'subsubcat-034', name: 'Feminina', parentId: 'subcat-017', level: 3 },
+      { id: 'subsubcat-035', name: 'Masculina', parentId: 'subcat-017', level: 3 },
     ],
     skipDuplicates: true
   })
