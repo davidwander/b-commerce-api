@@ -13,6 +13,7 @@ interface CreatePieceBody {
   categoryPath: string[];
   description: string;
   quantity?: number;
+  price?: number;
 }
 
 // Interface para filtros de peças
@@ -49,7 +50,8 @@ export default async function inventoryRoutes(fastify: FastifyInstance) {
         categoryPath: piece.categoryPath,
         categoryId: piece.categoryId,
         subcategoryId: piece.subcategoryId,
-        genderId: piece.genderId
+        genderId: piece.genderId,
+        price: piece.price // Incluir o preço aqui
       }));
 
       return reply.send({ success: true, data: mappedPieces });
@@ -109,7 +111,8 @@ export default async function inventoryRoutes(fastify: FastifyInstance) {
         categoryPath: piece.categoryPath,
         categoryId: piece.categoryId,
         subcategoryId: piece.subcategoryId,
-        genderId: piece.genderId
+        genderId: piece.genderId,
+        price: piece.price // Incluir o preço aqui
       }));
 
       return reply.send({ success: true, data: mappedPieces });
@@ -150,14 +153,15 @@ export default async function inventoryRoutes(fastify: FastifyInstance) {
             minItems: 1
           },
           description: { type: 'string', minLength: 1 },
-          quantity: { type: 'number', minimum: 1, default: 1 }
+          quantity: { type: 'number', minimum: 1, default: 1 },
+          price: { type: 'number', minimum: 0, default: 0.00 }
         }
       }
     }
   }, async (request: FastifyRequest<{ Body: CreatePieceBody }>, reply: FastifyReply) => {
     try {
       const userId = (request as any).userId; // Obter o ID do usuário autenticado
-      const { categoryPath, description, quantity = 1 } = request.body;
+      const { categoryPath, description, quantity = 1, price = 0.00 } = request.body;
 
       console.log('📦 Criando peça para usuário:', userId, request.body);
 
@@ -185,7 +189,8 @@ export default async function inventoryRoutes(fastify: FastifyInstance) {
           genderId,
           categoryPath: categoryPath.join('/'),
           quantity,
-          userId
+          userId,
+          price
         }
       });
 
@@ -197,7 +202,8 @@ export default async function inventoryRoutes(fastify: FastifyInstance) {
           id: piece.id,
           description: piece.description,
           quantity: piece.quantity,
-          categoryPath: piece.categoryPath
+          categoryPath: piece.categoryPath,
+          price: piece.price
         }
       });
 

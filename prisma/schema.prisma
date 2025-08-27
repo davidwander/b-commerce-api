@@ -47,6 +47,7 @@ model Piece {
   genderId      String?  @map("gender_id")
   categoryPath  String   @map("category_path")
   quantity      Int      @default(1)
+  price         Float    @default(0.00)
   userId        Int      @map("user_id") 
   createdAt     DateTime @default(now()) @map("created_at")
   updatedAt     DateTime @updatedAt @map("updated_at")
