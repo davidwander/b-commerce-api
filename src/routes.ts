@@ -4,6 +4,8 @@ import { authRoutes } from './routes/authRoutes.js';
 
 // 🔥 IMPORTAR AS NOVAS ROTAS DE ESTOQUE
 import inventoryRoutes from './routes/inventory.js';
+// 🔥 IMPORTAR AS NOVAS ROTAS DE VENDAS
+import salesRoutes from './routes/sales.js';
 
 export async function routes(fastify: FastifyInstance, _options: FastifyPluginOptions) {
   // Rota de teste básico
@@ -24,4 +26,7 @@ export async function routes(fastify: FastifyInstance, _options: FastifyPluginOp
   
   // 🔥 REGISTRAR AS ROTAS DO ESTOQUE
   await fastify.register(inventoryRoutes, { prefix: '/api/inventory' });
+  
+  // 🔥 REGISTRAR AS ROTAS DE VENDAS
+  await fastify.register(salesRoutes, { prefix: '/api/sales' });
 }
