@@ -7,8 +7,6 @@ const prisma = new PrismaClient();
 // ===========================
 // INTERFACES
 // ===========================
-
-// Definindo o tipo para o corpo da requisição de criação de peça
 interface CreatePieceBody {
   categoryPath: string[];
   description: string;
@@ -16,7 +14,6 @@ interface CreatePieceBody {
   price?: number;
 }
 
-// Interface para filtros de peças
 interface FilterPiecesQuery {
   categoryId?: string;
   subcategoryId?: string;
@@ -24,39 +21,78 @@ interface FilterPiecesQuery {
   search?: string;
 }
 
-// Definindo o tipo para o corpo da requisição de atualização de preço de peça
 interface UpdatePiecePriceBody {
   price: number;
 }
 
 // ===========================
-// ROTAS DA API
+// FUNÇÃO DE VALIDAÇÃO DE CATEGORIA
 // ===========================
+async function validateCategoryPath(categoryPath: string[]) {
+  if (!categoryPath || categoryPath.length === 0) {
+    throw new Error('categoryPath vazio');
+  }
 
+  let parentId: string | null = null;
+
+  for (let i = 0; i < categoryPath.length; i++) {
+    const id = categoryPath[i];
+
+    const category = await prisma.category.findUnique({ where: { id } });
+
+    if (!category) {
+      throw new Error(`Categoria não encontrada: ${id}`);
+    }
+
+    // Checa hierarquia
+    if (i > 0 && category.parentId !== parentId) {
+      throw new Error(`Categoria ${id} não corresponde ao pai ${parentId}`);
+    }
+
+    parentId = id;
+  }
+
+  // Verifica se último nível é folha
+  const lastCategory = await prisma.category.findUnique({
+    where: { id: categoryPath[categoryPath.length - 1] },
+  });
+
+  if (!lastCategory) throw new Error('Última categoria não encontrada');
+  if (!lastCategory.isLeaf) {
+    throw new Error(
+      `Última categoria (${lastCategory.id}) não é leaf. Só é permitido adicionar peças em categorias folha.`
+    );
+  }
+
+  return true;
+}
+
+// ===========================
+// ROTAS
+// ===========================
 export default async function inventoryRoutes(fastify: FastifyInstance) {
   const authMiddleware = new AuthMiddleware();
 
-  // ✅ ROTA PARA BUSCAR TODAS AS PEÇAS
+  // ✅ Buscar todas as peças
   fastify.get('/pieces', { preHandler: authMiddleware.authenticate.bind(authMiddleware) }, async (request, reply) => {
     try {
-      const userId = (request as any).userId; // Obter o ID do usuário autenticado
+      const userId = (request as any).userId;
       const pieces = await prisma.piece.findMany({
         where: { userId },
-        include: { category: true }, // Incluir informações da categoria, se necessário
+        include: { category: true },
         orderBy: { createdAt: 'desc' }
       });
 
-      // Mapear para o formato esperado pelo frontend
       const mappedPieces = pieces.map(piece => ({
         id: piece.id,
-        name: piece.description, 
+        name: piece.description,
         description: piece.description,
         quantity: piece.quantity,
         categoryPath: piece.categoryPath,
         categoryId: piece.categoryId,
         subcategoryId: piece.subcategoryId,
         genderId: piece.genderId,
-        price: piece.price // Incluir o preço aqui
+        price: piece.price
       }));
 
       return reply.send({ success: true, data: mappedPieces });
@@ -66,7 +102,7 @@ export default async function inventoryRoutes(fastify: FastifyInstance) {
     }
   });
 
-  // 🔥 NOVA ROTA PARA FILTRAR PEÇAS (ESSA ESTAVA FALTANDO!)
+  // 🔥 Filtrar peças
   fastify.get<{ Querystring: FilterPiecesQuery }>('/pieces/filter', {
     preHandler: authMiddleware.authenticate.bind(authMiddleware)
   }, async (request: FastifyRequest<{ Querystring: FilterPiecesQuery }>, reply: FastifyReply) => {
@@ -74,31 +110,12 @@ export default async function inventoryRoutes(fastify: FastifyInstance) {
       const userId = (request as any).userId;
       const { categoryId, subcategoryId, genderId, search } = request.query;
 
-      console.log('🔍 Filtrando peças para usuário:', userId, 'com filtros:', request.query);
-
-      // Construir filtros dinamicamente
       const whereClause: any = { userId };
 
-      if (categoryId) {
-        whereClause.categoryId = categoryId;
-      }
-
-      if (subcategoryId) {
-        whereClause.subcategoryId = subcategoryId;
-      }
-
-      if (genderId) {
-        whereClause.genderId = genderId;
-      }
-
-      if (search) {
-        whereClause.description = {
-          contains: search,
-          mode: 'insensitive' // Case insensitive search
-        };
-      }
-
-      console.log('📊 Filtros aplicados no Prisma:', whereClause);
+      if (categoryId) whereClause.categoryId = categoryId;
+      if (subcategoryId) whereClause.subcategoryId = subcategoryId;
+      if (genderId) whereClause.genderId = genderId;
+      if (search) whereClause.description = { contains: search, mode: 'insensitive' };
 
       const pieces = await prisma.piece.findMany({
         where: whereClause,
@@ -106,86 +123,53 @@ export default async function inventoryRoutes(fastify: FastifyInstance) {
         orderBy: { createdAt: 'desc' }
       });
 
-      console.log('✅ Peças encontradas:', pieces.length);
-
-      // Mapear para o formato esperado pelo frontend
       const mappedPieces = pieces.map(piece => ({
         id: piece.id,
-        name: piece.description, // O frontend espera 'name', mas o DB tem 'description'
+        name: piece.description,
         quantity: piece.quantity,
         categoryPath: piece.categoryPath,
         categoryId: piece.categoryId,
         subcategoryId: piece.subcategoryId,
         genderId: piece.genderId,
-        price: piece.price // Incluir o preço aqui
+        price: piece.price
       }));
 
       return reply.send({ success: true, data: mappedPieces });
-
     } catch (error) {
-      console.error('❌ Erro ao filtrar peças:', error);
+      console.error('Erro ao filtrar peças:', error);
       return reply.status(500).send({ success: false, error: 'Erro ao filtrar peças' });
     }
   });
 
-  // 1. BUSCAR ÁRVORE COMPLETA DE CATEGORIAS COM PEÇAS DO USUÁRIO
+  // 1. Árvores de categorias
   fastify.get('/categories/tree', {
     preHandler: authMiddleware.authenticate.bind(authMiddleware)
   }, async (_request: FastifyRequest, reply: FastifyReply) => {
     try {
-      // Por enquanto, retornar uma resposta básica
-      return reply.send({ 
-        success: true, 
-        data: [] // Implementar conforme sua necessidade
-      });
+      return reply.send({ success: true, data: [] });
     } catch (error) {
-      console.error('❌ Erro ao buscar árvore de categorias:', error);
+      console.error('Erro ao buscar árvore de categorias:', error);
       return reply.status(500).send({ success: false, error: 'Erro ao buscar categorias' });
     }
   });
 
-  // 2. ADICIONAR NOVA PEÇA
+  // 2. Adicionar nova peça
   fastify.post<{ Body: CreatePieceBody }>('/pieces', {
     preHandler: authMiddleware.authenticate.bind(authMiddleware),
-    schema: {
-      body: {
-        type: 'object',
-        required: ['categoryPath', 'description'],
-        properties: {
-          categoryPath: { 
-            type: 'array', 
-            items: { type: 'string' },
-            minItems: 1
-          },
-          description: { type: 'string', minLength: 1 },
-          quantity: { type: 'number', minimum: 1, default: 1 },
-          price: { type: 'number', minimum: 0, default: 0.00 }
-        }
-      }
-    }
   }, async (request: FastifyRequest<{ Body: CreatePieceBody }>, reply: FastifyReply) => {
     try {
-      const userId = (request as any).userId; // Obter o ID do usuário autenticado
-      const { categoryPath, description, quantity = 1, price = 0.00 } = request.body;
+      const userId = (request as any).userId;
+      const { categoryPath, description, quantity = 1, price = 0.0 } = request.body;
 
       console.log('📦 Criando peça para usuário:', userId, request.body);
 
-      // Validar se as categorias existem (opcional - remova se não tiver tabela Category)
-      if (categoryPath[0]) {
-        const categoryExists = await prisma.category.findUnique({
-          where: { id: categoryPath[0] }
-        }).catch(() => null); // Ignorar erro se tabela não existir
+      // 🔍 Validação detalhada
+      await validateCategoryPath(categoryPath);
 
-        // Se não encontrar e você não tem tabela Category, pode prosseguir
-        console.log('📂 Categoria encontrada:', !!categoryExists);
-      }
-
-      // Determinar IDs das categorias
       const categoryId = categoryPath[0];
       const subcategoryId = categoryPath[1] || null;
       const genderId = categoryPath[2] || null;
 
-      // Criar a peça
       const piece = await prisma.piece.create({
         data: {
           description,
@@ -195,62 +179,36 @@ export default async function inventoryRoutes(fastify: FastifyInstance) {
           categoryPath: categoryPath.join('/'),
           quantity,
           userId,
-          price
-        }
+          price,
+        },
       });
 
       console.log('✅ Peça criada:', piece.id);
 
-      return reply.send({
-        success: true,
-        data: {
-          id: piece.id,
-          description: piece.description,
-          quantity: piece.quantity,
-          categoryPath: piece.categoryPath,
-          price: piece.price
-        }
-      });
-
-    } catch (error) {
-      console.error('❌ Erro ao criar peça:', error);
-      return reply.status(500).send({
-        success: false,
-        error: 'Erro ao adicionar peça'
-      });
+      return reply.send({ success: true, data: piece });
+    } catch (error: any) {
+      console.error('❌ Erro ao criar peça:', error.message);
+      return reply.status(400).send({ success: false, error: error.message });
     }
   });
 
-  // ✅ ROTA PARA ATUALIZAR O PREÇO DE UMA PEÇA EXISTENTE
+  // 3. Atualizar preço
   fastify.put<{ Params: { id: string }, Body: UpdatePiecePriceBody }>('/pieces/:id/price', {
     preHandler: authMiddleware.authenticate.bind(authMiddleware),
-    schema: {
-      body: {
-        type: 'object',
-        required: ['price'],
-        properties: {
-          price: { type: 'number', minimum: 0 }
-        }
-      }
-    }
   }, async (request: FastifyRequest<{ Params: { id: string }, Body: UpdatePiecePriceBody }>, reply: FastifyReply) => {
     try {
       const userId = (request as any).userId;
       const { id } = request.params;
       const { price } = request.body;
 
-      console.log(`💲 Atualizando preço da peça ${id} para ${price} para o usuário ${userId}`);
-
       const updatedPiece = await prisma.piece.update({
-        where: { id, userId }, // Garante que o usuário só pode atualizar suas próprias peças
+        where: { id, userId },
         data: { price },
       });
 
-      console.log('✅ Preço da peça atualizado com sucesso:', updatedPiece.id);
-
       return reply.send({ success: true, data: { id: updatedPiece.id, price: updatedPiece.price } });
     } catch (error) {
-      console.error('❌ Erro ao atualizar preço da peça:', error);
+      console.error('Erro ao atualizar preço da peça:', error);
       return reply.status(500).send({ success: false, error: 'Erro ao atualizar preço da peça' });
     }
   });

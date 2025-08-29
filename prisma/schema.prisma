@@ -33,7 +33,7 @@ model Category {
   // Relacionamentos
   parent     Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
   children   Category[] @relation("CategoryHierarchy")
-  
+  isLeaf    Boolean    @default(false)
   // Peças relacionadas
   piecesAsCategory     Piece[] @relation("CategoryPieces")
   piecesAsSubcategory  Piece[] @relation("SubcategoryPieces")
