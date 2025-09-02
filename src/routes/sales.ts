@@ -1,57 +1,115 @@
-import { FastifyInstance } from 'fastify';
+import { FastifyInstance, FastifyPluginOptions, FastifyRequest, FastifyReply } from 'fastify';
 import SaleController from '../controllers/SaleController.js';
-import AuthMiddleware from '../middleware/authMiddleware.js';
+import authenticateToken from '../middleware/authMiddleware.js';
 
-declare module 'fastify' {
-  interface FastifyRequest {
-    userId?: string;
-    userEmail?: string;
-  }
+// Interfaces para tipagem
+interface CreateSaleBody {
+  clientName: string;
+  phone?: string;
+  address?: string;
 }
 
-async function salesRoutes(fastify: FastifyInstance) {
+interface AddPieceToSaleParams {
+  saleId: string;
+}
+
+interface AddPieceToSaleBody {
+  pieceId: string;
+  quantity: number;
+}
+
+interface GetSalesQuery {
+  status?: 'open' | 'closed';
+  page?: string;
+  limit?: string;
+}
+
+interface GetSaleParams {
+  saleId: string;
+}
+
+export default async function salesRoutes(fastify: FastifyInstance, _options: FastifyPluginOptions) {
+  // INSTANCIAR O CONTROLLER
   const saleController = new SaleController();
-  const authMiddleware = new AuthMiddleware();
 
-  // Rota de teste SEM autenticação para debug
-  fastify.post('/test', async (request, reply) => {
-    console.log('🧪 === TESTE DE ROTA DE VENDAS SEM AUTH ===');
-    console.log('📦 Body recebido:', request.body);
-    console.log('📋 Headers:', request.headers);
-    
-    reply.send({
-      success: true,
-      message: 'Rota de vendas está funcionando!',
-      data: {
-        receivedBody: request.body,
-        timestamp: new Date().toISOString()
-      }
-    });
-  });
-
-  // Rota principal COM autenticação (com debug adicional)
-  fastify.post('/', { 
-    preHandler: async (request, reply) => {
-      console.log('🔐 === INICIANDO AUTH MIDDLEWARE PARA VENDAS ===');
-      try {
-        await authMiddleware.authenticate(request, reply);
-        console.log('✅ AUTH MIDDLEWARE VENDAS: Sucesso');
-        console.log('👤 User ID definido:', (request as any).userId);
-      } catch (error) {
-        console.error('❌ AUTH MIDDLEWARE VENDAS: Erro:', error);
-        throw error;
+  // Schema para validação de criação de venda
+  const createSaleSchema = {
+    body: {
+      type: 'object',
+      required: ['clientName'],
+      properties: {
+        clientName: {
+          type: 'string',
+          minLength: 1,
+          maxLength: 255
+        },
+        phone: {
+          type: 'string',
+          maxLength: 20
+        },
+        address: {
+          type: 'string',
+          maxLength: 500
+        }
       }
     }
-  }, async (request, reply) => {
-    console.log('🏪 === CHEGOU NO CONTROLLER DE VENDAS ===');
-    console.log('👤 User ID no controller:', (request as any).userId);
+  };
+
+  // Schema para adicionar peça à venda
+  const addPieceSchema = {
+    params: {
+      type: 'object',
+      required: ['saleId'],
+      properties: {
+        saleId: { type: 'string' }
+      }
+    },
+    body: {
+      type: 'object',
+      required: ['pieceId', 'quantity'],
+      properties: {
+        pieceId: { type: 'string' },
+        quantity: { type: 'number', minimum: 1 }
+      }
+    }
+  };
+
+  // ROTA: Criar nova venda (COM MIDDLEWARE DE AUTENTICAÇÃO)
+  fastify.post<{ Body: CreateSaleBody }>('/', {
+    schema: createSaleSchema,
+    preHandler: [authenticateToken] // 🔥 ADICIONAR O MIDDLEWARE AQUI
+  }, async (request: FastifyRequest<{ Body: CreateSaleBody }>, reply: FastifyReply) => {
     return saleController.createSale(request, reply);
   });
 
-  // Rota para adicionar peças
-  fastify.post('/:saleId/pieces', { preHandler: authMiddleware.authenticate }, async (request, reply) => {
+  // ROTA: Listar vendas do usuário (COM MIDDLEWARE DE AUTENTICAÇÃO)
+  fastify.get<{ Querystring: GetSalesQuery }>('/', {
+    preHandler: [authenticateToken] // 🔥 ADICIONAR O MIDDLEWARE AQUI
+  }, async (request: FastifyRequest<{ Querystring: GetSalesQuery }>, reply: FastifyReply) => {
+    return saleController.getSales(request, reply);
+  });
+
+  // ROTA: Buscar venda específica por ID (COM MIDDLEWARE DE AUTENTICAÇÃO)
+  fastify.get<{ Params: GetSaleParams }>('/:saleId', {
+    preHandler: [authenticateToken] // 🔥 ADICIONAR O MIDDLEWARE AQUI
+  }, async (request: FastifyRequest<{ Params: GetSaleParams }>, reply: FastifyReply) => {
+    return saleController.getSaleById(request, reply);
+  });
+
+  // ROTA: Adicionar peça à venda (COM MIDDLEWARE DE AUTENTICAÇÃO)
+  fastify.post<{ Params: AddPieceToSaleParams; Body: AddPieceToSaleBody }>('/:saleId/pieces', {
+    schema: addPieceSchema,
+    preHandler: [authenticateToken] // 🔥 ADICIONAR O MIDDLEWARE AQUI
+  }, async (request: FastifyRequest<{ Params: AddPieceToSaleParams; Body: AddPieceToSaleBody }>, reply: FastifyReply) => {
     return saleController.addPieceToSale(request, reply);
   });
-}
 
-export default salesRoutes;
+  // ROTA DE TESTE (opcional, sem autenticação para debug)
+  fastify.post('/test', async (request: FastifyRequest, reply: FastifyReply) => {
+    return reply.send({
+      message: 'Rota de vendas funcionando!',
+      timestamp: new Date().toISOString(),
+      data: request.body
+    });
+  });
+}
