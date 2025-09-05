@@ -40,8 +40,8 @@ class AuthService {
     // Em produção, usar variáveis de ambiente
     this.jwtSecret = process.env.JWT_SECRET || 'sua-chave-secreta-super-segura';
     this.jwtRefreshSecret = process.env.JWT_REFRESH_SECRET || 'sua-chave-refresh-super-segura';
-    this.tokenExpiration = process.env.JWT_EXPIRATION || '15m'; // 15 minutos
-    this.refreshTokenExpiration = process.env.JWT_REFRESH_EXPIRATION || '7d'; // 7 dias
+    this.tokenExpiration = process.env.JWT_EXPIRATION || '1h'; 
+    this.refreshTokenExpiration = process.env.JWT_REFRESH_EXPIRATION || '7d'; 
   }
 
   async login(email: string, password: string): Promise<LoginResponse> {

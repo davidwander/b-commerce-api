@@ -91,6 +91,7 @@ class SaleService {
       const sales = await prisma.sale.findMany({
         where: {
           userId: userId,
+          status: status, // Usar o status diretamente do parâmetro
         },
         include: {
           salePieces: {
@@ -106,21 +107,19 @@ class SaleService {
         take: limit,
       });
 
-      // Processar vendas para adicionar informações calculadas
+      // O status já vem filtrado do banco de dados.
+      // As propriedades totalPieces e totalValue ainda precisam ser calculadas para cada venda.
       const processedSales = sales.map(sale => {
         const totalPieces = sale.salePieces.reduce((sum, sp) => sum + sp.quantity, 0);
         const totalValue = sale.salePieces.reduce((sum, sp) => {
           return sum + (sp.piece.price * sp.quantity);
         }, 0);
         
-        // Determinar status: 'open' se não tem peças ou valor zero, 'closed' caso contrário
-        const currentStatus = totalPieces === 0 || totalValue === 0 ? 'open' : 'closed';
-        
         return {
           ...sale,
           totalPieces,
           totalValue,
-          status: currentStatus,
+          status: sale.status, // Usar o status que já veio do DB
           salePieces: sale.salePieces.map(sp => ({
             ...sp,
             piece: {
@@ -132,28 +131,21 @@ class SaleService {
         };
       });
 
-      // Filtrar por status se especificado
-      const filteredSales = processedSales.filter(sale => {
-        if (status === 'open') {
-          return sale.status === 'open';
-        }
-        return sale.status === 'closed';
-      });
-
-      // Contar total para paginação (apenas vendas do usuário)
+      // Contar total para paginação (apenas vendas do usuário com o status filtrado)
       const totalCount = await prisma.sale.count({
         where: {
           userId: userId,
+          status: status, // Contar apenas as vendas com o status filtrado
         }
       });
 
-      // Para o total filtrado, vamos usar o length dos processedSales filtrados
-      const totalFiltered = filteredSales.length;
+      // O totalFiltered agora é o totalCount direto do DB após o filtro de status
+      const totalFiltered = totalCount;
 
-      console.log(`✅ SALE SERVICE: ${filteredSales.length} vendas encontradas de ${totalCount} total`);
+      console.log(`✅ SALE SERVICE: ${processedSales.length} vendas encontradas de ${totalFiltered} total`);
 
       return {
-        sales: filteredSales,
+        sales: processedSales,
         total: totalFiltered,
         page,
         limit
@@ -215,7 +207,7 @@ class SaleService {
         ...sale,
         totalPieces,
         totalValue,
-        status: totalPieces === 0 || totalValue === 0 ? 'open' : 'closed'
+        status: sale.status, // Usar o status que já veio do DB
       };
 
       console.log('✅ SALE SERVICE: Venda encontrada:', sale.id);
