@@ -102,7 +102,10 @@ export default async function inventoryRoutes(fastify: FastifyInstance) {
       const userId = (request as any).userId || 1; // Hardcoded temporariamente para teste
       
       const pieces = await prisma.piece.findMany({
-        where: { userId },
+        where: { 
+          userId, 
+          quantity: { gt: 0 } // Adiciona filtro para quantidade > 0
+        },
         include: { 
           category: true,
           subcategory: true,
@@ -145,7 +148,7 @@ export default async function inventoryRoutes(fastify: FastifyInstance) {
 
       console.log('🔍 Aplicando filtros:', { categoryId, subcategoryId, genderId, search, userId });
 
-      const whereClause: any = { userId };
+      const whereClause: any = { userId, quantity: { gt: 0 } }; // Adiciona filtro para quantidade > 0
 
       if (categoryId) whereClause.categoryId = categoryId;
       if (subcategoryId) whereClause.subcategoryId = subcategoryId;
