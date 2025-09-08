@@ -73,7 +73,7 @@ model Sale {
   userId        Int      @map("user_id")
   createdAt     DateTime @default(now()) @map("created_at")
   updatedAt     DateTime @updatedAt @map("updated_at")
-  status        String   @default("open") // Novo campo adicionado
+  status        String   @default("open-no-pieces")
 
   // Relacionamentos
   user          User     @relation(fields: [userId], references: [id])

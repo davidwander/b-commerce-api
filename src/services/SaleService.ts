@@ -17,7 +17,7 @@ interface AddPieceToSaleData {
 
 interface GetSalesParams {
   userId: number;
-  status?: 'open' | 'closed';
+  status?: 'open-no-pieces' | 'open-awaiting-payment' | 'closed' | ('open-no-pieces' | 'open-awaiting-payment')[];
   page?: number;
   limit?: number;
 }
@@ -73,11 +73,12 @@ class SaleService {
 
   async getSalesByUser(params: GetSalesParams) {
     try {
-      const { userId, status = 'open', page = 1, limit = 10 } = params;
+      const { userId, status, page = 1, limit = 10 } = params;
+      const effectiveStatus = status || ['open-no-pieces', 'open-awaiting-payment'];
       
       console.log('📋 === SALE SERVICE: Listando vendas ===');
       console.log('👤 User ID:', userId);
-      console.log('📊 Status:', status);
+      console.log('📊 Status:', effectiveStatus);
       console.log('📄 Página:', page, 'Limite:', limit);
 
       // Validações
@@ -91,7 +92,7 @@ class SaleService {
       const sales = await prisma.sale.findMany({
         where: {
           userId: userId,
-          status: status, // Usar o status diretamente do parâmetro
+          status: effectiveStatus,
         },
         include: {
           salePieces: {
@@ -135,7 +136,7 @@ class SaleService {
       const totalCount = await prisma.sale.count({
         where: {
           userId: userId,
-          status: status, // Contar apenas as vendas com o status filtrado
+          status: effectiveStatus,
         }
       });
 
@@ -288,6 +289,15 @@ class SaleService {
           }
         });
 
+        // Atualizar o status da venda se necessário (após a primeira peça)
+        if (sale.status === 'open-no-pieces') {
+          await prisma.sale.update({
+            where: { id: sale.id },
+            data: { status: 'open-awaiting-payment' }
+          });
+          console.log(`✅ SALE SERVICE: Status da venda ${sale.id} atualizado para 'open-awaiting-payment'`);
+        }
+
         console.log('✅ SALE SERVICE: Quantidade da peça atualizada na venda');
         return updatedSalePiece;
       } else {
@@ -307,6 +317,15 @@ class SaleService {
             quantity: piece.quantity - data.quantity
           }
         });
+
+        // Atualizar o status da venda (primeira peça adicionada)
+        if (sale.status === 'open-no-pieces') {
+          await prisma.sale.update({
+            where: { id: sale.id },
+            data: { status: 'open-awaiting-payment' }
+          });
+          console.log(`✅ SALE SERVICE: Status da venda ${sale.id} atualizado para 'open-awaiting-payment'`);
+        }
 
         console.log('✅ SALE SERVICE: Peça adicionada à venda com sucesso');
         return salePiece;

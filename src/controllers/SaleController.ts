@@ -17,7 +17,7 @@ interface AddPieceToSaleBody {
 }
 
 interface GetSalesQuery {
-  status?: 'open' | 'closed';
+  status?: 'open-no-pieces' | 'open-awaiting-payment' | 'closed' | ('open-no-pieces' | 'open-awaiting-payment')[];
   page?: string;
   limit?: string;
 }
@@ -96,7 +96,7 @@ class SaleController {
 
       const page = parseInt(query.page || '1');
       const limit = parseInt(query.limit || '10');
-      const status = query.status || 'open'; // Por padrão, buscar vendas em aberto
+      const status = query.status || ['open-no-pieces', 'open-awaiting-payment'];
 
       console.log(`📊 Parâmetros: página ${page}, limite ${limit}, status ${status}`);
 
