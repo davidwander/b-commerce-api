@@ -17,7 +17,7 @@ interface AddPieceToSaleData {
 
 interface GetSalesParams {
   userId: number;
-  status?: 'open-no-pieces' | 'open-awaiting-payment' | 'closed' | ('open-no-pieces' | 'open-awaiting-payment')[];
+  status?: 'open-no-pieces' | 'open-awaiting-payment' | 'closed' | ('open-no-pieces' | 'open-awaiting-payment')[] | string[];
   page?: number;
   limit?: number;
 }
@@ -92,7 +92,7 @@ class SaleService {
       const sales = await prisma.sale.findMany({
         where: {
           userId: userId,
-          status: effectiveStatus,
+          status: Array.isArray(effectiveStatus) ? { in: effectiveStatus } : effectiveStatus,
         },
         include: {
           salePieces: {
@@ -136,7 +136,7 @@ class SaleService {
       const totalCount = await prisma.sale.count({
         where: {
           userId: userId,
-          status: effectiveStatus,
+          status: Array.isArray(effectiveStatus) ? { in: effectiveStatus } : effectiveStatus,
         }
       });
 
