@@ -104,6 +104,13 @@ export default async function salesRoutes(fastify: FastifyInstance, _options: Fa
     return saleController.addPieceToSale(request, reply);
   });
 
+  // ROTA: Confirmar pagamento de uma venda (COM MIDDLEWARE DE AUTENTICAÇÃO)
+  fastify.patch<{ Params: GetSaleParams }>('/:saleId/confirm-payment', {
+    preHandler: [authenticateToken]
+  }, async (request: FastifyRequest<{ Params: GetSaleParams }>, reply: FastifyReply) => {
+    return saleController.confirmPayment(request, reply);
+  });
+
   // ROTA DE TESTE (opcional, sem autenticação para debug)
   fastify.post('/test', async (request: FastifyRequest, reply: FastifyReply) => {
     return reply.send({

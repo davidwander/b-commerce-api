@@ -218,6 +218,50 @@ class SaleController {
       });
     }
   }
+
+  async confirmPayment(request: FastifyRequest, reply: FastifyReply) {
+    try {
+      console.log('💰 === SALE CONTROLLER: Confirmando pagamento ===');
+
+      const { saleId } = request.params as { saleId: string };
+      const userId = (request as any).userId;
+
+      console.log('🏷️ Sale ID:', saleId);
+      console.log('👤 User ID do middleware:', userId);
+
+      if (!userId) {
+        console.log('❌ ID do usuário não encontrado na requisição');
+        return reply.status(401).send({
+          error: 'ID do usuário não encontrado na requisição.',
+        });
+      }
+
+      if (!saleId) {
+        console.log('❌ ID da venda é obrigatório');
+        return reply.status(400).send({
+          error: 'ID da venda é obrigatório.',
+        });
+      }
+
+      const updatedSale = await this.saleService.confirmPayment(saleId, userId);
+
+      console.log('✅ Pagamento confirmado com sucesso para venda:', updatedSale.id);
+
+      reply.status(200).send({
+        message: 'Pagamento confirmado com sucesso!',
+        data: updatedSale,
+      });
+    } catch (error: unknown) {
+      console.error('💥 Erro no controller ao confirmar pagamento:', error);
+      const errorMessage = (error instanceof Error) ? error.message : 'Erro interno do servidor';
+      // Determinar o status code com base na mensagem de erro
+      const statusCode = errorMessage.includes('não encontrada') || errorMessage.includes('não pertence') ? 404 : 
+                         errorMessage.includes('já está fechada') || errorMessage.includes('sem peças') ? 400 : 500;
+      reply.status(statusCode).send({
+        error: errorMessage,
+      });
+    }
+  }
 }
 
 export default SaleController;

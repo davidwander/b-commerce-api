@@ -335,6 +335,55 @@ class SaleService {
       throw error;
     }
   }
+
+  async confirmPayment(saleId: string, userId: number) {
+    try {
+      console.log('💰 === SALE SERVICE: Confirmando pagamento da venda ===');
+      console.log('🏷️ Sale ID:', saleId);
+      console.log('👤 User ID:', userId);
+
+      if (!saleId || saleId.trim() === '') {
+        throw new Error('ID da venda é obrigatório');
+      }
+      if (!userId || typeof userId !== 'number') {
+        throw new Error('ID do usuário é obrigatório e deve ser um número');
+      }
+
+      const sale = await prisma.sale.findFirst({
+        where: { id: saleId, userId: userId },
+      });
+
+      if (!sale) {
+        throw new Error('Venda não encontrada ou não pertence ao usuário');
+      }
+
+      if (sale.status === 'closed') {
+        throw new Error('Esta venda já está fechada');
+      }
+
+      // Opcional: Adicionar verificação se totalPieces > 0 antes de fechar
+      // para garantir que não fechará uma venda vazia com status 'open-awaiting-payment'
+      // embora o fluxo atual já defina para 'open-awaiting-payment' quando peças são adicionadas.
+      const totalPiecesInSale = await prisma.salePiece.count({
+        where: { saleId: sale.id }
+      });
+
+      if (totalPiecesInSale === 0) {
+        throw new Error('Não é possível fechar uma venda sem peças.');
+      }
+
+      const updatedSale = await prisma.sale.update({
+        where: { id: saleId },
+        data: { status: 'closed' },
+      });
+
+      console.log('✅ SALE SERVICE: Pagamento da venda confirmada com sucesso:', updatedSale.id);
+      return updatedSale;
+    } catch (error) {
+      console.error('❌ SALE SERVICE: Erro ao confirmar pagamento:', error);
+      throw error;
+    }
+  }
 }
 
 export default SaleService;
