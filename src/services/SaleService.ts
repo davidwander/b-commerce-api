@@ -17,7 +17,7 @@ interface AddPieceToSaleData {
 
 interface GetSalesParams {
   userId: number;
-  status?: 'open-no-pieces' | 'open-awaiting-payment' | 'closed' | ('open-no-pieces' | 'open-awaiting-payment')[] | string[];
+  status?: 'open-no-pieces' | 'open-awaiting-payment' | 'closed' | 'calculate-shipping' | ('open-no-pieces' | 'open-awaiting-payment' | 'calculate-shipping')[] | string[];
   page?: number;
   limit?: number;
 }
@@ -74,7 +74,7 @@ class SaleService {
   async getSalesByUser(params: GetSalesParams) {
     try {
       const { userId, status, page = 1, limit = 10 } = params;
-      const effectiveStatus = status || ['open-no-pieces', 'open-awaiting-payment'];
+      const effectiveStatus = status || ['open-no-pieces', 'open-awaiting-payment', 'calculate-shipping']; // Incluído 'calculate-shipping'
       
       console.log('📋 === SALE SERVICE: Listando vendas ===');
       console.log('👤 User ID:', userId);
@@ -374,10 +374,10 @@ class SaleService {
 
       const updatedSale = await prisma.sale.update({
         where: { id: saleId },
-        data: { status: 'closed' },
+        data: { status: 'calculate-shipping' }, // Alterado para 'calculate-shipping'
       });
 
-      console.log('✅ SALE SERVICE: Pagamento da venda confirmada com sucesso:', updatedSale.id);
+      console.log('✅ SALE SERVICE: Status da venda atualizado para calcular frete:', updatedSale.id);
       return updatedSale;
     } catch (error) {
       console.error('❌ SALE SERVICE: Erro ao confirmar pagamento:', error);

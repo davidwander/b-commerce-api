@@ -17,7 +17,7 @@ interface AddPieceToSaleBody {
 }
 
 interface GetSalesQuery {
-  status?: 'open-no-pieces' | 'open-awaiting-payment' | 'closed' | ('open-no-pieces' | 'open-awaiting-payment')[];
+  status?: 'open-no-pieces' | 'open-awaiting-payment' | 'closed' | 'calculate-shipping' | ('open-no-pieces' | 'open-awaiting-payment' | 'calculate-shipping')[];
   page?: string;
   limit?: string;
 }
