@@ -17,7 +17,7 @@ interface AddPieceToSaleBody {
 }
 
 interface GetSalesQuery {
-  status?: 'open-no-pieces' | 'open-awaiting-payment' | 'closed' | 'calculate-shipping' | ('open-no-pieces' | 'open-awaiting-payment' | 'calculate-shipping')[];
+  status?: 'open-no-pieces' | 'open-awaiting-payment' | 'closed' | 'calculate-shipping' | 'shipping-awaiting-payment' | 'shipping-date-pending' | ('open-no-pieces' | 'open-awaiting-payment' | 'calculate-shipping' | 'shipping-awaiting-payment' | 'shipping-date-pending')[];
   page?: string;
   limit?: string;
 }
@@ -100,7 +100,7 @@ class SaleController {
 
       const page = parseInt(query.page || '1');
       const limit = parseInt(query.limit || '10');
-      const status = query.status || ['open-no-pieces', 'open-awaiting-payment'];
+      const status = query.status || ['open-no-pieces', 'open-awaiting-payment', 'calculate-shipping', 'shipping-awaiting-payment', 'shipping-date-pending'];
 
       console.log(`📊 Parâmetros: página ${page}, limite ${limit}, status ${status}`);
 
@@ -317,6 +317,92 @@ class SaleController {
       const errorMessage = (error instanceof Error) ? error.message : 'Erro interno do servidor';
       const statusCode = errorMessage.includes('não encontrada') || errorMessage.includes('não pertence') ? 404 :
                          errorMessage.includes('não pode ser negativo') ? 400 : 500;
+      reply.status(statusCode).send({
+        error: errorMessage,
+      });
+    }
+  }
+
+  async confirmShippingPayment(request: FastifyRequest, reply: FastifyReply) {
+    try {
+      console.log('💰 === SALE CONTROLLER: Confirmando pagamento do frete ===');
+
+      const { saleId } = request.params as { saleId: string };
+      const userId = (request as any).userId;
+
+      console.log('🏷️ Sale ID:', saleId);
+      console.log('👤 User ID do middleware:', userId);
+
+      if (!userId) {
+        console.log('❌ ID do usuário não encontrado na requisição');
+        return reply.status(401).send({
+          error: 'ID do usuário não encontrado na requisição.',
+        });
+      }
+
+      if (!saleId) {
+        console.log('❌ ID da venda é obrigatório');
+        return reply.status(400).send({
+          error: 'ID da venda é obrigatório.',
+        });
+      }
+
+      const updatedSale = await this.saleService.confirmShippingPayment(saleId, userId);
+
+      console.log('✅ Pagamento do frete confirmado com sucesso para venda:', updatedSale.id);
+
+      reply.status(200).send({
+        message: 'Pagamento do frete confirmado com sucesso!',
+        data: updatedSale,
+      });
+    } catch (error: unknown) {
+      console.error('💥 Erro no controller ao confirmar pagamento do frete:', error);
+      const errorMessage = (error instanceof Error) ? error.message : 'Erro interno do servidor';
+      const statusCode = errorMessage.includes('não encontrada') || errorMessage.includes('não pertence') ? 404 :
+                         errorMessage.includes('já está fechada') || errorMessage.includes('não é possível confirmar o pagamento do frete') ? 400 : 500;
+      reply.status(statusCode).send({
+        error: errorMessage,
+      });
+    }
+  }
+
+  async confirmShippingDate(request: FastifyRequest, reply: FastifyReply) {
+    try {
+      console.log('📦 === SALE CONTROLLER: Confirmando data de envio ===');
+
+      const { saleId } = request.params as { saleId: string };
+      const userId = (request as any).userId;
+
+      console.log('🏷️ Sale ID:', saleId);
+      console.log('👤 User ID do middleware:', userId);
+
+      if (!userId) {
+        console.log('❌ ID do usuário não encontrado na requisição');
+        return reply.status(401).send({
+          error: 'ID do usuário não encontrado na requisição.',
+        });
+      }
+
+      if (!saleId) {
+        console.log('❌ ID da venda é obrigatório');
+        return reply.status(400).send({
+          error: 'ID da venda é obrigatório.',
+        });
+      }
+
+      const updatedSale = await this.saleService.confirmShippingDate(saleId, userId);
+
+      console.log('✅ Data de envio confirmada com sucesso para venda:', updatedSale.id);
+
+      reply.status(200).send({
+        message: 'Data de envio confirmada com sucesso!',
+        data: updatedSale,
+      });
+    } catch (error: unknown) {
+      console.error('💥 Erro no controller ao confirmar data de envio:', error);
+      const errorMessage = (error instanceof Error) ? error.message : 'Erro interno do servidor';
+      const statusCode = errorMessage.includes('não encontrada') || errorMessage.includes('não pertence') ? 404 :
+                         errorMessage.includes('já está fechada') || errorMessage.includes('não é possível confirmar a data de envio') ? 400 : 500;
       reply.status(statusCode).send({
         error: errorMessage,
       });

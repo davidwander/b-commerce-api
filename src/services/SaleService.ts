@@ -17,7 +17,7 @@ interface AddPieceToSaleData {
 
 interface GetSalesParams {
   userId: number;
-  status?: 'open-no-pieces' | 'open-awaiting-payment' | 'closed' | 'calculate-shipping' | ('open-no-pieces' | 'open-awaiting-payment' | 'calculate-shipping')[] | string[];
+  status?: 'open-no-pieces' | 'open-awaiting-payment' | 'closed' | 'calculate-shipping' | 'shipping-awaiting-payment' | 'shipping-date-pending' | ('open-no-pieces' | 'open-awaiting-payment' | 'calculate-shipping' | 'shipping-awaiting-payment' | 'shipping-date-pending')[];
   page?: number;
   limit?: number;
 }
@@ -413,13 +413,13 @@ class SaleService {
       }
 
       // Se a venda está em 'calculate-shipping', atualize para 'closed' após adicionar o frete
-      const newStatus = sale.status; // Mantém o status original, não muda para 'closed'
+      const newStatus = sale.status === 'calculate-shipping' ? 'shipping-awaiting-payment' : sale.status; // Altera para 'shipping-awaiting-payment'
 
       const updatedSale = await prisma.sale.update({
         where: { id: data.saleId },
         data: {
           shippingValue: data.shippingValue,
-          status: newStatus, // Atualiza o status se for 'calculate-shipping'
+          status: newStatus,
         },
       });
 
@@ -427,6 +427,94 @@ class SaleService {
       return updatedSale;
     } catch (error) {
       console.error('❌ SALE SERVICE: Erro ao atualizar valor do frete:', error);
+      throw error;
+    }
+  }
+
+  async confirmShippingPayment(saleId: string, userId: number) {
+    try {
+      console.log('💰 === SALE SERVICE: Confirmando pagamento do frete ===');
+      console.log('🏷️ Sale ID:', saleId);
+      console.log('👤 User ID:', userId);
+
+      if (!saleId || saleId.trim() === '') {
+        throw new Error('ID da venda é obrigatório');
+      }
+      if (!userId || typeof userId !== 'number') {
+        throw new Error('ID do usuário é obrigatório e deve ser um número');
+      }
+
+      const sale = await prisma.sale.findFirst({
+        where: { id: saleId, userId: userId },
+      });
+
+      if (!sale) {
+        throw new Error('Venda não encontrada ou não pertence ao usuário');
+      }
+
+      if (sale.status === 'closed') {
+        throw new Error('Esta venda já está fechada');
+      }
+
+      if (sale.status !== 'shipping-awaiting-payment') {
+        throw new Error('Não é possível confirmar o pagamento do frete para vendas neste status.');
+      }
+
+      if (sale.shippingValue === null || sale.shippingValue === undefined) {
+        throw new Error('Não é possível confirmar o pagamento do frete sem um valor de frete definido.');
+      }
+
+      const updatedSale = await prisma.sale.update({
+        where: { id: saleId },
+        data: { status: 'shipping-date-pending' }, // Altera para 'shipping-date-pending'
+      });
+
+      console.log('✅ SALE SERVICE: Pagamento do frete confirmado. Status: shipping-date-pending:', updatedSale.id);
+      return updatedSale;
+    } catch (error) {
+      console.error('❌ SALE SERVICE: Erro ao confirmar pagamento do frete:', error);
+      throw error;
+    }
+  }
+
+  async confirmShippingDate(saleId: string, userId: number) {
+    try {
+      console.log('📦 === SALE SERVICE: Confirmando data de envio ===');
+      console.log('🏷️ Sale ID:', saleId);
+      console.log('👤 User ID:', userId);
+
+      if (!saleId || saleId.trim() === '') {
+        throw new Error('ID da venda é obrigatório');
+      }
+      if (!userId || typeof userId !== 'number') {
+        throw new Error('ID do usuário é obrigatório e deve ser um número');
+      }
+
+      const sale = await prisma.sale.findFirst({
+        where: { id: saleId, userId: userId },
+      });
+
+      if (!sale) {
+        throw new Error('Venda não encontrada ou não pertence ao usuário');
+      }
+
+      if (sale.status === 'closed') {
+        throw new Error('Esta venda já está fechada');
+      }
+
+      if (sale.status !== 'shipping-date-pending') {
+        throw new Error('Não é possível confirmar a data de envio para vendas neste status.');
+      }
+
+      const updatedSale = await prisma.sale.update({
+        where: { id: saleId },
+        data: { status: 'closed' },
+      });
+
+      console.log('✅ SALE SERVICE: Data de envio confirmada e venda fechada:', updatedSale.id);
+      return updatedSale;
+    } catch (error) {
+      console.error('❌ SALE SERVICE: Erro ao confirmar data de envio:', error);
       throw error;
     }
   }

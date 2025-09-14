@@ -19,7 +19,7 @@ interface AddPieceToSaleBody {
 }
 
 interface GetSalesQuery {
-  status?: 'open' | 'closed';
+  status?: 'open' | 'closed' | 'calculate-shipping' | 'shipping-awaiting-payment' | 'shipping-date-pending';
   page?: string;
   limit?: string;
 }
@@ -143,6 +143,20 @@ export default async function salesRoutes(fastify: FastifyInstance, _options: Fa
     preHandler: [authenticateToken],
   }, async (request: FastifyRequest<{ Params: UpdateShippingValueParams; Body: UpdateShippingValueBody }>, reply: FastifyReply) => {
     return saleController.updateShippingValue(request, reply);
+  });
+
+  // ROTA: Confirmar pagamento do frete (COM MIDDLEWARE DE AUTENTICAÇÃO)
+  fastify.patch<{ Params: GetSaleParams }>('/:saleId/confirm-shipping-payment', {
+    preHandler: [authenticateToken],
+  }, async (request: FastifyRequest<{ Params: GetSaleParams }>, reply: FastifyReply) => {
+    return saleController.confirmShippingPayment(request, reply);
+  });
+
+  // ROTA: Confirmar data de envio (COM MIDDLEWARE DE AUTENTICAÇÃO)
+  fastify.patch<{ Params: GetSaleParams }>('/:saleId/confirm-shipping-date', {
+    preHandler: [authenticateToken],
+  }, async (request: FastifyRequest<{ Params: GetSaleParams }>, reply: FastifyReply) => {
+    return saleController.confirmShippingDate(request, reply);
   });
 
   // ROTA DE TESTE (opcional, sem autenticação para debug)
