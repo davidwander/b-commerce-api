@@ -80,7 +80,7 @@ class SaleService {
   async getSalesByUser(params: GetSalesParams) {
     try {
       const { userId, status, page = 1, limit = 10 } = params;
-      const effectiveStatus = status || ['open-no-pieces', 'open-awaiting-payment', 'calculate-shipping']; // Incluído 'calculate-shipping'
+      const effectiveStatus = status || ['open-no-pieces', 'open-awaiting-payment', 'calculate-shipping', 'shipping-awaiting-payment', 'shipping-date-pending']; // Incluído 'shipping-awaiting-payment' e 'shipping-date-pending'
       
       console.log('📋 === SALE SERVICE: Listando vendas ===');
       console.log('👤 User ID:', userId);
@@ -127,6 +127,7 @@ class SaleService {
           totalPieces,
           totalValue,
           status: sale.status, // Usar o status que já veio do DB
+          shippingValue: sale.shippingValue, // Incluir o valor do frete
           salePieces: sale.salePieces.map(sp => ({
             ...sp,
             piece: {
@@ -215,6 +216,7 @@ class SaleService {
         totalPieces,
         totalValue,
         status: sale.status, // Usar o status que já veio do DB
+        shippingValue: sale.shippingValue, // Incluir o valor do frete
       };
 
       console.log('✅ SALE SERVICE: Venda encontrada:', sale.id);
