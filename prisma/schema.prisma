@@ -74,6 +74,7 @@ model Sale {
   createdAt     DateTime @default(now()) @map("created_at")
   updatedAt     DateTime @updatedAt @map("updated_at")
   status        String   @default("open-no-pieces")
+  shippingValue Float?   @map("shipping_value") // Novo campo para armazenar o valor do frete
 
   // Relacionamentos
   user          User     @relation(fields: [userId], references: [id])

@@ -22,6 +22,12 @@ interface GetSalesParams {
   limit?: number;
 }
 
+interface UpdateShippingValueData {
+  saleId: string;
+  userId: number;
+  shippingValue: number;
+}
+
 class SaleService {
   async createSale(data: CreateSaleData) {
     try {
@@ -361,9 +367,6 @@ class SaleService {
         throw new Error('Esta venda já está fechada');
       }
 
-      // Opcional: Adicionar verificação se totalPieces > 0 antes de fechar
-      // para garantir que não fechará uma venda vazia com status 'open-awaiting-payment'
-      // embora o fluxo atual já defina para 'open-awaiting-payment' quando peças são adicionadas.
       const totalPiecesInSale = await prisma.salePiece.count({
         where: { saleId: sale.id }
       });
@@ -374,13 +377,56 @@ class SaleService {
 
       const updatedSale = await prisma.sale.update({
         where: { id: saleId },
-        data: { status: 'calculate-shipping' }, // Alterado para 'calculate-shipping'
+        data: { status: 'calculate-shipping' },
       });
 
       console.log('✅ SALE SERVICE: Status da venda atualizado para calcular frete:', updatedSale.id);
       return updatedSale;
     } catch (error) {
       console.error('❌ SALE SERVICE: Erro ao confirmar pagamento:', error);
+      throw error;
+    }
+  }
+
+  async updateShippingValue(data: UpdateShippingValueData) {
+    try {
+      console.log('🚚 === SALE SERVICE: Atualizando valor do frete ===');
+      console.log('📦 Dados:', data);
+
+      if (!data.saleId || data.saleId.trim() === '') {
+        throw new Error('ID da venda é obrigatório');
+      }
+      if (!data.userId || typeof data.userId !== 'number') {
+        throw new Error('ID do usuário é obrigatório e deve ser um número');
+      }
+      if (data.shippingValue < 0) {
+        throw new Error('O valor do frete não pode ser negativo');
+      }
+
+      // Verificar se a venda existe e pertence ao usuário
+      const sale = await prisma.sale.findFirst({
+        where: { id: data.saleId, userId: data.userId },
+      });
+
+      if (!sale) {
+        throw new Error('Venda não encontrada ou não pertence ao usuário');
+      }
+
+      // Se a venda está em 'calculate-shipping', atualize para 'closed' após adicionar o frete
+      const newStatus = sale.status; // Mantém o status original, não muda para 'closed'
+
+      const updatedSale = await prisma.sale.update({
+        where: { id: data.saleId },
+        data: {
+          shippingValue: data.shippingValue,
+          status: newStatus, // Atualiza o status se for 'calculate-shipping'
+        },
+      });
+
+      console.log('✅ SALE SERVICE: Valor do frete atualizado com sucesso para venda:', updatedSale.id);
+      return updatedSale;
+    } catch (error) {
+      console.error('❌ SALE SERVICE: Erro ao atualizar valor do frete:', error);
       throw error;
     }
   }

@@ -16,6 +16,7 @@ CREATE TABLE "public"."categories" (
     "parent_id" TEXT,
     "level" INTEGER NOT NULL,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "isLeaf" BOOLEAN NOT NULL DEFAULT false,
 
     CONSTRAINT "categories_pkey" PRIMARY KEY ("id")
 );
@@ -46,6 +47,8 @@ CREATE TABLE "public"."sales" (
     "user_id" INTEGER NOT NULL,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
+    "status" TEXT NOT NULL DEFAULT 'open-no-pieces',
+    "shipping_value" DOUBLE PRECISION,
 
     CONSTRAINT "sales_pkey" PRIMARY KEY ("id")
 );

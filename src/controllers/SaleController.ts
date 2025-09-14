@@ -22,6 +22,10 @@ interface GetSalesQuery {
   limit?: string;
 }
 
+interface UpdateShippingValueBody {
+  shippingValue: number;
+}
+
 class SaleController {
   private saleService: SaleService;
 
@@ -257,6 +261,62 @@ class SaleController {
       // Determinar o status code com base na mensagem de erro
       const statusCode = errorMessage.includes('não encontrada') || errorMessage.includes('não pertence') ? 404 : 
                          errorMessage.includes('já está fechada') || errorMessage.includes('sem peças') ? 400 : 500;
+      reply.status(statusCode).send({
+        error: errorMessage,
+      });
+    }
+  }
+
+  async updateShippingValue(request: FastifyRequest, reply: FastifyReply) {
+    try {
+      console.log('🚚 === SALE CONTROLLER: Atualizando valor do frete ===');
+
+      const { saleId } = request.params as { saleId: string };
+      const { shippingValue } = request.body as UpdateShippingValueBody;
+      const userId = (request as any).userId;
+
+      console.log('🏷️ Sale ID:', saleId);
+      console.log('💰 Shipping Value:', shippingValue);
+      console.log('👤 User ID do middleware:', userId);
+
+      if (!userId) {
+        console.log('❌ ID do usuário não encontrado na requisição');
+        return reply.status(401).send({
+          error: 'ID do usuário não encontrado na requisição.',
+        });
+      }
+
+      if (!saleId) {
+        console.log('❌ ID da venda é obrigatório');
+        return reply.status(400).send({
+          error: 'ID da venda é obrigatório.',
+        });
+      }
+
+      if (shippingValue === undefined || shippingValue === null || shippingValue < 0) {
+        console.log('❌ Valor do frete inválido');
+        return reply.status(400).send({
+          error: 'O valor do frete é obrigatório e não pode ser negativo.',
+        });
+      }
+
+      const updatedSale = await this.saleService.updateShippingValue({
+        saleId,
+        userId,
+        shippingValue,
+      });
+
+      console.log('✅ Valor do frete atualizado com sucesso para venda:', updatedSale.id);
+
+      reply.status(200).send({
+        message: 'Valor do frete atualizado com sucesso!',
+        data: updatedSale,
+      });
+    } catch (error: unknown) {
+      console.error('💥 Erro no controller ao atualizar valor do frete:', error);
+      const errorMessage = (error instanceof Error) ? error.message : 'Erro interno do servidor';
+      const statusCode = errorMessage.includes('não encontrada') || errorMessage.includes('não pertence') ? 404 :
+                         errorMessage.includes('não pode ser negativo') ? 400 : 500;
       reply.status(statusCode).send({
         error: errorMessage,
       });

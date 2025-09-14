@@ -28,6 +28,14 @@ interface GetSaleParams {
   saleId: string;
 }
 
+interface UpdateShippingValueParams {
+  saleId: string;
+}
+
+interface UpdateShippingValueBody {
+  shippingValue: number;
+}
+
 export default async function salesRoutes(fastify: FastifyInstance, _options: FastifyPluginOptions) {
   // INSTANCIAR O CONTROLLER
   const saleController = new SaleController();
@@ -74,6 +82,24 @@ export default async function salesRoutes(fastify: FastifyInstance, _options: Fa
     }
   };
 
+  // Schema para atualizar valor do frete
+  const updateShippingValueSchema = {
+    params: {
+      type: 'object',
+      required: ['saleId'],
+      properties: {
+        saleId: { type: 'string' }
+      }
+    },
+    body: {
+      type: 'object',
+      required: ['shippingValue'],
+      properties: {
+        shippingValue: { type: 'number', minimum: 0 }
+      }
+    }
+  };
+
   // ROTA: Criar nova venda (COM MIDDLEWARE DE AUTENTICAÇÃO)
   fastify.post<{ Body: CreateSaleBody }>('/', {
     schema: createSaleSchema,
@@ -109,6 +135,14 @@ export default async function salesRoutes(fastify: FastifyInstance, _options: Fa
     preHandler: [authenticateToken]
   }, async (request: FastifyRequest<{ Params: GetSaleParams }>, reply: FastifyReply) => {
     return saleController.confirmPayment(request, reply);
+  });
+
+  // ROTA: Atualizar valor do frete (COM MIDDLEWARE DE AUTENTICAÇÃO)
+  fastify.patch<{ Params: UpdateShippingValueParams; Body: UpdateShippingValueBody }>('/:saleId/shipping-value', {
+    schema: updateShippingValueSchema,
+    preHandler: [authenticateToken],
+  }, async (request: FastifyRequest<{ Params: UpdateShippingValueParams; Body: UpdateShippingValueBody }>, reply: FastifyReply) => {
+    return saleController.updateShippingValue(request, reply);
   });
 
   // ROTA DE TESTE (opcional, sem autenticação para debug)
