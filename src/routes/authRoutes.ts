@@ -46,7 +46,7 @@ export async function authRoutes(fastify: FastifyInstance, _options: FastifyPlug
     }
 
     try {
-      const newTokens = await authController.refreshToken(request, reply); // Correção: Passando request e reply
+      const newTokens = await authController.refreshToken(request, reply); 
       return reply.send(newTokens);
     } catch (error) {
       console.error('Erro ao renovar token:', error);

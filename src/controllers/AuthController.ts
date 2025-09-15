@@ -168,7 +168,7 @@ class AuthController {
         message: 'Token válido',
         data: {
           valid: true,
-          expiresIn: Math.ceil((result.expiresIn || 0) / 1000) // em segundos
+          expiresIn: Math.ceil((result.expiresIn || 0) / 1000) 
         }
       });
 

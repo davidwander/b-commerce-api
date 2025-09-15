@@ -24,8 +24,6 @@ interface LoginResponse {
 }
 
 interface TokenPayload {
-  iat: any;
-  exp: any;
   userId: string;
   email: string;
 }
@@ -77,23 +75,23 @@ class AuthService {
 
       // Gerar tokens
       const tokenPayload: TokenPayload = {
-        userId: user.id,
+        userId: user.id.toString(),
         email: user.email
       };
 
-      const token = jwt.sign(tokenPayload, this.jwtSecret, {
+      const token = jwt.sign(tokenPayload, this.jwtSecret as jwt.Secret, {
         expiresIn: this.tokenExpiration
-      });
+      } as jwt.SignOptions);
 
-      const refreshToken = jwt.sign(tokenPayload, this.jwtRefreshSecret, {
+      const refreshToken = jwt.sign(tokenPayload, this.jwtRefreshSecret as jwt.Secret, {
         expiresIn: this.refreshTokenExpiration
-      });
+      } as jwt.SignOptions);
 
       console.log('Login realizado com sucesso para:', email);
 
       return {
         user: {
-          id: user.id,
+          id: user.id.toString(),
           name: user.name,
           email: user.email
         },
@@ -129,7 +127,7 @@ class AuthService {
 
       // Verificar se usuário ainda existe
       const user = await prismaClient.user.findUnique({
-        where: { id: decoded.userId },
+        where: { id: Number(decoded.userId) },
         select: { id: true, email: true }
       });
 
@@ -139,17 +137,17 @@ class AuthService {
 
       // Gerar novos tokens
       const tokenPayload: TokenPayload = {
-        userId: user.id,
+        userId: user.id.toString(),
         email: user.email
       };
 
-      const newToken = jwt.sign(tokenPayload, this.jwtSecret, {
+      const newToken = jwt.sign(tokenPayload, this.jwtSecret as jwt.Secret, {
         expiresIn: this.tokenExpiration
-      });
+      } as jwt.SignOptions);
 
-      const newRefreshToken = jwt.sign(tokenPayload, this.jwtRefreshSecret, {
+      const newRefreshToken = jwt.sign(tokenPayload, this.jwtRefreshSecret as jwt.Secret, {
         expiresIn: this.refreshTokenExpiration
-      });
+      } as jwt.SignOptions);
 
       return {
         token: newToken,
@@ -170,7 +168,7 @@ class AuthService {
   async getUserById(userId: string) {
     try {
       const user = await prismaClient.user.findUnique({
-        where: { id: userId },
+        where: { id: Number(userId) },
         select: {
           id: true,
           name: true,

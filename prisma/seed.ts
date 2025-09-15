@@ -16,7 +16,7 @@ async function main() {
       { id: 'cat-005', name: 'Saia', level: 1, isLeaf: false },
       { id: 'cat-006', name: 'Vestido', level: 1, isLeaf: false },
       { id: 'cat-007', name: 'Shorts', level: 1, isLeaf: false },
-      { id: 'cat-008', name: 'Biquíni', level: 1, isLeaf: false }, // Corrigido nome
+      { id: 'cat-008', name: 'Biquíni', level: 1, isLeaf: false }, 
       { id: 'cat-009', name: 'Casacos', level: 1, isLeaf: false }
     ],
     skipDuplicates: true

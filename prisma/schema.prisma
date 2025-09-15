@@ -18,7 +18,7 @@ model User {
   pieces    Piece[] 
   
   // Relacionamento com vendas
-  sales     Sale[] // Adicionado para relação inversa com Sale
+  sales     Sale[] 
   
   @@map("users")
 }
@@ -60,7 +60,7 @@ model Piece {
   subcategory  Category? @relation("SubcategoryPieces", fields: [subcategoryId], references: [id])
   gender       Category? @relation("GenderPieces", fields: [genderId], references: [id])
   user         User      @relation(fields: [userId], references: [id])  
-  salePieces   SalePiece[] // Adicionado para relação inversa com SalePiece
+  salePieces   SalePiece[] 
 
   @@map("pieces")
 }
@@ -74,11 +74,11 @@ model Sale {
   createdAt     DateTime @default(now()) @map("created_at")
   updatedAt     DateTime @updatedAt @map("updated_at")
   status        String   @default("open-no-pieces")
-  shippingValue Float?   @map("shipping_value") // Novo campo para armazenar o valor do frete
+  shippingValue Float?   @map("shipping_value") 
 
   // Relacionamentos
   user          User     @relation(fields: [userId], references: [id])
-  salePieces    SalePiece[] // Relação inversa para SalePiece
+  salePieces    SalePiece[] 
 
   @@map("sales")
 }
@@ -95,6 +95,6 @@ model SalePiece {
   sale          Sale     @relation(fields: [saleId], references: [id])
   piece         Piece    @relation(fields: [pieceId], references: [id])
 
-  @@unique([saleId, pieceId]) // Garante que uma peça só pode ser adicionada uma vez a uma venda
+  @@unique([saleId, pieceId]) 
   @@map("sale_pieces")
 }

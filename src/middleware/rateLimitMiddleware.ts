@@ -132,7 +132,7 @@ class RateLimitMiddleware {
       const email = body?.email;
       
       if (!email) {
-        return; // Deixa a validação para o controller
+        return; 
       }
       
       const key = `forgot:${email}`;

@@ -103,21 +103,21 @@ export default async function salesRoutes(fastify: FastifyInstance, _options: Fa
   // ROTA: Criar nova venda (COM MIDDLEWARE DE AUTENTICAÇÃO)
   fastify.post<{ Body: CreateSaleBody }>('/', {
     schema: createSaleSchema,
-    preHandler: [authenticateToken] // 🔥 ADICIONAR O MIDDLEWARE AQUI
+    preHandler: [authenticateToken] 
   }, async (request: FastifyRequest<{ Body: CreateSaleBody }>, reply: FastifyReply) => {
     return saleController.createSale(request, reply);
   });
 
   // ROTA: Listar vendas do usuário (COM MIDDLEWARE DE AUTENTICAÇÃO)
   fastify.get<{ Querystring: GetSalesQuery }>('/', {
-    preHandler: [authenticateToken] // 🔥 ADICIONAR O MIDDLEWARE AQUI
+    preHandler: [authenticateToken] 
   }, async (request: FastifyRequest<{ Querystring: GetSalesQuery }>, reply: FastifyReply) => {
     return saleController.getSales(request, reply);
   });
 
   // ROTA: Buscar venda específica por ID (COM MIDDLEWARE DE AUTENTICAÇÃO)
   fastify.get<{ Params: GetSaleParams }>('/:saleId', {
-    preHandler: [authenticateToken] // 🔥 ADICIONAR O MIDDLEWARE AQUI
+    preHandler: [authenticateToken] 
   }, async (request: FastifyRequest<{ Params: GetSaleParams }>, reply: FastifyReply) => {
     return saleController.getSaleById(request, reply);
   });
@@ -125,7 +125,7 @@ export default async function salesRoutes(fastify: FastifyInstance, _options: Fa
   // ROTA: Adicionar peça à venda (COM MIDDLEWARE DE AUTENTICAÇÃO)
   fastify.post<{ Params: AddPieceToSaleParams; Body: AddPieceToSaleBody }>('/:saleId/pieces', {
     schema: addPieceSchema,
-    preHandler: [authenticateToken] // 🔥 ADICIONAR O MIDDLEWARE AQUI
+    preHandler: [authenticateToken] 
   }, async (request: FastifyRequest<{ Params: AddPieceToSaleParams; Body: AddPieceToSaleBody }>, reply: FastifyReply) => {
     return saleController.addPieceToSale(request, reply);
   });

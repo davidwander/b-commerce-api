@@ -260,7 +260,7 @@ class SaleController {
       const errorMessage = (error instanceof Error) ? error.message : 'Erro interno do servidor';
       // Determinar o status code com base na mensagem de erro
       const statusCode = errorMessage.includes('não encontrada') || errorMessage.includes('não pertence') ? 404 : 
-                         errorMessage.includes('já está fechada') || errorMessage.includes('sem peças') ? 400 : 500;
+        errorMessage.includes('já está fechada') || errorMessage.includes('sem peças') ? 400 : 500;
       reply.status(statusCode).send({
         error: errorMessage,
       });
@@ -316,7 +316,7 @@ class SaleController {
       console.error('💥 Erro no controller ao atualizar valor do frete:', error);
       const errorMessage = (error instanceof Error) ? error.message : 'Erro interno do servidor';
       const statusCode = errorMessage.includes('não encontrada') || errorMessage.includes('não pertence') ? 404 :
-                         errorMessage.includes('não pode ser negativo') ? 400 : 500;
+        errorMessage.includes('não pode ser negativo') ? 400 : 500;
       reply.status(statusCode).send({
         error: errorMessage,
       });
@@ -359,7 +359,7 @@ class SaleController {
       console.error('💥 Erro no controller ao confirmar pagamento do frete:', error);
       const errorMessage = (error instanceof Error) ? error.message : 'Erro interno do servidor';
       const statusCode = errorMessage.includes('não encontrada') || errorMessage.includes('não pertence') ? 404 :
-                         errorMessage.includes('já está fechada') || errorMessage.includes('não é possível confirmar o pagamento do frete') ? 400 : 500;
+        errorMessage.includes('já está fechada') || errorMessage.includes('não é possível confirmar o pagamento do frete') ? 400 : 500;
       reply.status(statusCode).send({
         error: errorMessage,
       });
@@ -402,7 +402,7 @@ class SaleController {
       console.error('💥 Erro no controller ao confirmar data de envio:', error);
       const errorMessage = (error instanceof Error) ? error.message : 'Erro interno do servidor';
       const statusCode = errorMessage.includes('não encontrada') || errorMessage.includes('não pertence') ? 404 :
-                         errorMessage.includes('já está fechada') || errorMessage.includes('não é possível confirmar a data de envio') ? 400 : 500;
+        errorMessage.includes('já está fechada') || errorMessage.includes('não é possível confirmar a data de envio') ? 400 : 500;
       reply.status(statusCode).send({
         error: errorMessage,
       });

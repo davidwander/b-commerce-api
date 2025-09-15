@@ -99,12 +99,12 @@ export default async function inventoryRoutes(fastify: FastifyInstance) {
     // REMOVIDO temporariamente: preHandler: authMiddleware.authenticate.bind(authMiddleware) 
   }, async (request, reply) => {
     try {
-      const userId = (request as any).userId || 1; // Hardcoded temporariamente para teste
+      const userId = (request as any).userId || 1; 
       
       const pieces = await prisma.piece.findMany({
         where: { 
           userId, 
-          quantity: { gt: 0 } // Adiciona filtro para quantidade > 0
+          quantity: { gt: 0 } 
         },
         include: { 
           category: true,
@@ -143,12 +143,12 @@ export default async function inventoryRoutes(fastify: FastifyInstance) {
     // REMOVIDO temporariamente: preHandler: authMiddleware.authenticate.bind(authMiddleware)
   }, async (request: FastifyRequest<{ Querystring: FilterPiecesQuery }>, reply: FastifyReply) => {
     try {
-      const userId = (request as any).userId || 1; // Hardcoded temporariamente para teste
+      const userId = (request as any).userId || 1; 
       const { categoryId, subcategoryId, genderId, search } = request.query;
 
       console.log('🔍 Aplicando filtros:', { categoryId, subcategoryId, genderId, search, userId });
 
-      const whereClause: any = { userId, quantity: { gt: 0 } }; // Adiciona filtro para quantidade > 0
+      const whereClause: any = { userId, quantity: { gt: 0 } }; 
 
       if (categoryId) whereClause.categoryId = categoryId;
       if (subcategoryId) whereClause.subcategoryId = subcategoryId;
@@ -251,7 +251,7 @@ export default async function inventoryRoutes(fastify: FastifyInstance) {
     // REMOVIDO temporariamente: preHandler: authMiddleware.authenticate.bind(authMiddleware),
   }, async (request: FastifyRequest<{ Body: CreatePieceBody }>, reply: FastifyReply) => {
     try {
-      const userId = (request as any).userId || 1; // Hardcoded temporariamente para teste
+      const userId = (request as any).userId || 1; 
       const { categoryPath, description, quantity = 1 } = request.body;
 
       console.log('🚀 === INICIANDO CRIAÇÃO DE PEÇA ===');
@@ -298,7 +298,7 @@ export default async function inventoryRoutes(fastify: FastifyInstance) {
       const genderId = categoryPath.length > 2 ? categoryPath[2] : null;
       const categoryPathString = categoryPath.join('/');
       const descriptionTrimmed = description.trim();
-      const defaultPrice = 0.00; // Preço padrão já que não vem do frontend
+      const defaultPrice = 0.00; 
 
       console.log('📝 Dados organizados para inserção:');
       console.log('  - categoryId:', categoryId);
@@ -391,7 +391,7 @@ export default async function inventoryRoutes(fastify: FastifyInstance) {
     // REMOVIDO temporariamente: preHandler: authMiddleware.authenticate.bind(authMiddleware),
   }, async (request: FastifyRequest<{ Params: { id: string }, Body: UpdatePiecePriceBody }>, reply: FastifyReply) => {
     try {
-      const userId = (request as any).userId || 1; // Hardcoded temporariamente para teste
+      const userId = (request as any).userId || 1;
       const { id } = request.params;
       const { price } = request.body;
 

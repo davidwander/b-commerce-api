@@ -56,7 +56,6 @@ class CreateUserService {
       // Tratamento específico para erros do Prisma
       if (this.isPrismaError(error)) {
         if (error.code === 'P2002') {
-          // Erro de constraint única (email já existe)
           throw new BusinessError('Email já está em uso', 409);
         }
         

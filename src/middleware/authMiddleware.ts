@@ -15,7 +15,7 @@ export default async function authenticateToken(request: FastifyRequest, reply: 
       });
     }
 
-    const token = authHeader.substring(7); // Remove "Bearer "
+    const token = authHeader.substring(7);
     console.log('🎯 Token extraído (primeiros 20 chars):', token.substring(0, 20) + '...');
     
     if (!token) {

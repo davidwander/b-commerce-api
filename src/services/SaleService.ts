@@ -73,14 +73,14 @@ class SaleService {
       return sale;
     } catch (error) {
       console.error('❌ SALE SERVICE: Erro ao criar venda:', error);
-      throw error; // Re-throw para que o controller possa tratar
+      throw error; 
     }
   }
 
   async getSalesByUser(params: GetSalesParams) {
     try {
       const { userId, status, page = 1, limit = 10 } = params;
-      const effectiveStatus = status || ['open-no-pieces', 'open-awaiting-payment', 'calculate-shipping', 'shipping-awaiting-payment', 'shipping-date-pending']; // Incluído 'shipping-awaiting-payment' e 'shipping-date-pending'
+      const effectiveStatus = status || ['open-no-pieces', 'open-awaiting-payment', 'calculate-shipping', 'shipping-awaiting-payment', 'shipping-date-pending']; 
       
       console.log('📋 === SALE SERVICE: Listando vendas ===');
       console.log('👤 User ID:', userId);
