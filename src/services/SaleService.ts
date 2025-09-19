@@ -468,10 +468,10 @@ class SaleService {
 
       const updatedSale = await prisma.sale.update({
         where: { id: saleId },
-        data: { status: 'shipping-date-pending' }, // Altera para 'shipping-date-pending'
+        data: { status: 'closed' },
       });
 
-      console.log('✅ SALE SERVICE: Pagamento do frete confirmado. Status: shipping-date-pending:', updatedSale.id);
+      console.log('✅ SALE SERVICE: Pagamento do frete confirmado. Status: closed:', updatedSale.id);
       return updatedSale;
     } catch (error) {
       console.error('❌ SALE SERVICE: Erro ao confirmar pagamento do frete:', error);
